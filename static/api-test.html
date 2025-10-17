@@ -1,0 +1,150 @@
+<!-- API Test Page for Stryktipset Data -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stryktipset API Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .match {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .teams {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .odds {
+            display: flex;
+            gap: 10px;
+        }
+        .odd {
+            background: #e5e7eb;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 50px;
+            text-align: center;
+        }
+        .info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .refresh-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .refresh-btn:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Stryktipset API Test</h1>
+        <p>Testing consistent Saturday data - odds should NOT change on refresh!</p>
+    </div>
+
+    <button class="refresh-btn" onclick="fetchData()">🔄 Refresh Data</button>
+
+    <div id="content">
+        <div class="loading">Loading Stryktipset data...</div>
+    </div>
+
+    <script>
+        let fetchCount = 0;
+
+        async function fetchData() {
+            fetchCount++;
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const response = await fetch('/api/stryktipset');
+                const data = await response.json();
+
+                if (data.error) {
+                    content.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                let html = `
+                    <div class="info">
+                        <strong>Pool ID:</strong> ${data.poolId}<br>
+                        <strong>Last Updated:</strong> ${new Date(data.lastUpdated).toLocaleString()}<br>
+                        <strong>Close Time:</strong> ${new Date(data.closeDateTime).toLocaleString()}<br>
+                        <strong>Source:</strong> ${data.source}<br>
+                        <strong>Matches:</strong> ${data.matches.length}<br>
+                        <strong>Fetch Count:</strong> ${fetchCount} (odds should be identical!)
+                    </div>
+                `;
+
+                data.matches.forEach((match, index) => {
+                    html += `
+                        <div class="match">
+                            <div>
+                                <div style="color: #6b7280; font-size: 14px;">Match ${index + 1}</div>
+                                <div class="teams">${match.home} vs ${match.away}</div>
+                                <div style="color: #6b7280; font-size: 12px;">${new Date(match.kickoff).toLocaleString()}</div>
+                            </div>
+                            <div class="odds">
+                                <div class="odd">1: ${match.odds.home.toFixed(2)}</div>
+                                <div class="odd">X: ${match.odds.draw.toFixed(2)}</div>
+                                <div class="odd">2: ${match.odds.away.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                content.innerHTML = html;
+
+            } catch (error) {
+                content.innerHTML = `<div class="error">Fetch failed: ${error.message}</div>`;
+            }
+        }
+
+        // Load data on page load
+        fetchData();
+    </script>
+</body>
+</html>
