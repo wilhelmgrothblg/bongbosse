@@ -1,17 +1,8 @@
-// src/lib/supabase.ts
-import { createClient } from '@supabase/supabase-js'
-import { browser } from '$app/environment'
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
-// Handle environment variables safely during build
-const supabaseUrl = browser ? import.meta.env.PUBLIC_SUPABASE_URL : process.env.PUBLIC_SUPABASE_URL || ''
-const supabaseKey = browser ? import.meta.env.PUBLIC_SUPABASE_ANON_KEY : process.env.PUBLIC_SUPABASE_ANON_KEY || ''
-
-// Create a null client if variables are missing (build time)
-export const supabase = (supabaseUrl && supabaseKey) 
-  ? createClient(supabaseUrl, supabaseKey)
-  : null
-
-// Rest of your interfaces remain the same...
+// Initialize Supabase client
+export const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 export interface GeneratedSystem {
   id?: string
   created_at?: string

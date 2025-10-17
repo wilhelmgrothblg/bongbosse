@@ -48,31 +48,35 @@
         
         // Automatically save the generated system to Supabase
         try {
-          const { data: savedSystem, error } = await supabase
-            .from('generated_systems')
-            .insert([
-              {
-                risk_profile: riskProfile,
-                total_rows: result.system.configuration?.totalRows || 0,
-                cost: result.system.configuration?.cost || 0,
-                cost_per_row: 1,
-                description: result.system.configuration?.description || '',
-                system_data: result.system,
-                original_odds: matches, // Store original match odds
-                intelligence_data: result.intelligenceData || null,
-                status: 'pending'
-              }
-            ])
-            .select()
-            .single();
+          if (supabase) {
+            const { data: savedSystem, error } = await supabase
+              .from('generated_systems')
+              .insert([
+                {
+                  risk_profile: riskProfile,
+                  total_rows: result.system.configuration?.totalRows || 0,
+                  cost: result.system.configuration?.cost || 0,
+                  cost_per_row: 1,
+                  description: result.system.configuration?.description || '',
+                  system_data: result.system,
+                  original_odds: matches, // Store original match odds
+                  intelligence_data: result.intelligenceData || null,
+                  status: 'pending'
+                }
+              ])
+              .select()
+              .single();
 
-          if (error) {
-            console.error('Error saving system to Supabase:', error);
+            if (error) {
+              console.warn('Could not save system to database:', error.message);
+            } else {
+              console.log('System automatically saved to Supabase:', savedSystem.id);
+            }
           } else {
-            console.log('System automatically saved to Supabase:', savedSystem.id);
+            console.warn('Supabase not available - system generated but not saved');
           }
         } catch (error) {
-          console.error('Error saving system to database:', error);
+          console.warn('Database save failed:', error);
         }
       } else {
         alert(result.error || 'Misslyckades att generera system');

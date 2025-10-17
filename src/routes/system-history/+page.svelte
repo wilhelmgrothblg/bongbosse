@@ -12,21 +12,31 @@
 
   async function loadSystems() {
     loading = true;
+    error = null;
+    
     try {
+      // Check if Supabase is configured
+      if (!supabase) {
+        error = 'Databasanslutning inte konfigurerad';
+        console.error('Supabase client not initialized');
+        return;
+      }
+
       const { data, error: supabaseError } = await supabase
         .from('generated_systems')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (supabaseError) {
-        error = 'Kunde inte ladda systemhistorik: ' + supabaseError.message;
-        console.error('Error loading systems:', supabaseError);
+        error = 'Databasfel: ' + supabaseError.message;
+        console.error('Supabase error:', supabaseError);
       } else {
         systems = data || [];
+        console.log('Loaded systems:', systems.length);
       }
     } catch (err) {
-      error = 'Ett fel uppstod vid laddning av systemhistorik';
-      console.error('Error loading systems:', err);
+      error = 'Ett oväntat fel uppstod vid laddning av systemhistorik';
+      console.error('Unexpected error loading systems:', err);
     } finally {
       loading = false;
     }
