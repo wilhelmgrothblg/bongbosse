@@ -2,18 +2,21 @@
   import type { PageData } from './$types';
   import type { MatchWithOdds, GeneratedRow, RiskProfile, GeneratorConfig, GeneratedSystem } from '$lib/types';
   import type { SYSTEM_PRESETS, SystemConfiguration } from '$lib/types/system';
+  import '$lib/utils/mockDataGenerator.js'; // Initialize mock data in development
   import MatchTable from '$lib/components/MatchTable.svelte';
   import RiskProfileSelector from '$lib/components/RiskProfileSelector.svelte';
   import SystemConfigSelector from '$lib/components/SystemConfigSelector.svelte';
   import StryktipsetGrid from '$lib/components/StryktipsetGrid.svelte';
   import SystemFooter from '$lib/components/SystemFooter.svelte';
   import Icon from '$lib/components/Icon.svelte';
+  import { supabase } from '$lib/supabase';
   
   export let data: PageData;
   
   let matches: MatchWithOdds[] = data.matches;
   let generatedSystem: GeneratedSystem | null = null;
   let isGenerating = false;
+  let isGenerationAvailable = true;
   
   let riskProfile: RiskProfile = 'balanced';
   let selectedSystemType: keyof typeof SYSTEM_PRESETS = 'system-96';
@@ -22,6 +25,9 @@
   $: if (riskProfile || currentSystemConfig) {
     generatedSystem = null;
   }
+
+  // System generation is always available now (no artificial throttling)
+  $: isGenerationAvailable = true;
   
   async function generateSystem() {
     isGenerating = true;
@@ -39,6 +45,35 @@
       
       if (result.success) {
         generatedSystem = result.system;
+        
+        // Automatically save the generated system to Supabase
+        try {
+          const { data: savedSystem, error } = await supabase
+            .from('generated_systems')
+            .insert([
+              {
+                risk_profile: riskProfile,
+                total_rows: result.system.configuration?.totalRows || 0,
+                cost: result.system.configuration?.cost || 0,
+                cost_per_row: 1,
+                description: result.system.configuration?.description || '',
+                system_data: result.system,
+                original_odds: matches, // Store original match odds
+                intelligence_data: result.intelligenceData || null,
+                status: 'pending'
+              }
+            ])
+            .select()
+            .single();
+
+          if (error) {
+            console.error('Error saving system to Supabase:', error);
+          } else {
+            console.log('System automatically saved to Supabase:', savedSystem.id);
+          }
+        } catch (error) {
+          console.error('Error saving system to database:', error);
+        }
       } else {
         alert(result.error || 'Misslyckades att generera system');
       }
@@ -65,7 +100,12 @@
         <!-- Header -->
         <div class="text-center mb-8">
             <!-- Navigation -->
-            <div class="flex justify-center mb-8">
+            <div class="flex justify-center space-x-4 mb-8">
+                <a href="/system-history" 
+                   class="inline-flex items-center px-6 py-3 ss-button-secondary bg-white/10 border-blue-400 text-blue-100 hover:bg-blue-400 hover:text-white transition-all duration-200 backdrop-blur-sm">
+                    <span class="font-semibold">Systemhistorik</span>
+                    <span class="ml-2 ss-caption bg-blue-500/30 px-2 py-1 rounded">Historik</span>
+                </a>
                 <a href="/mattes-tankar" 
                    class="inline-flex items-center px-6 py-3 ss-button-secondary bg-white/10 border-purple-400 text-purple-100 hover:bg-purple-400 hover:text-white transition-all duration-200 backdrop-blur-sm">
                     <span class="font-semibold">Dalles Tankar</span>
@@ -107,15 +147,23 @@
                 <!-- Generate Button -->
                 <button 
                     on:click={generateSystem}
-                    disabled={isGenerating}
+                    disabled={isGenerating || !isGenerationAvailable}
                     class="w-full ss-button-primary py-4 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {#if isGenerating}
                         Genererar system...
+                    {:else if !isGenerationAvailable}
+                        🔒 System låst (Mån-Ons)
                     {:else}
                         Generera system
                     {/if}
                 </button>
+                
+                {#if !isGenerationAvailable}
+                    <div class="text-center text-sm text-blue-300 mt-2">
+                        System kan genereras: Tor-Lör
+                    </div>
+                {/if}
             </div>
             
             <!-- Center Columns: Matches & System View -->

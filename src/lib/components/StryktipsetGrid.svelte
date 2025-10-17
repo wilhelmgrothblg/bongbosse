@@ -204,7 +204,7 @@
                 disabled={!editable}
               >
                 {#if isSelected}
-                  <div class="text-white font-bold text-xl">✗</div>
+                  <div class="text-white font-bold text-xl">{outcome}</div>
                 {/if}
               </button>
             {/each}
