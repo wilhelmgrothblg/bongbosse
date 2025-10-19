@@ -19,7 +19,7 @@
 		<div class="flex justify-between items-center h-16">
 			<div class="flex space-x-8">
 				<a href="/" class="text-lg font-bold text-gray-900 hover:text-blue-600 transition-colors">
-					🎯 Bong-Bosse
+				 Bong-Bosse
 				</a>
 				<a href="/system-history" class="text-gray-600 hover:text-gray-900 transition-colors">
 					Systemhistorik
